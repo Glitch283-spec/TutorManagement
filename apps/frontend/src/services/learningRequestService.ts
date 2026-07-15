@@ -7,6 +7,7 @@ const toUiStatus = (status: string): LearningRequest['status'] => {
   if (value === 'pending') return 'Pending';
   if (value === 'processing') return 'Processing';
   if (value === 'assigned') return 'Assigned';
+  if (value === 'postponed') return 'Postponed';
   if (value === 'completed') return 'Completed';
   if (value === 'cancelled') return 'Cancelled';
   if (value === 'rejected') return 'Rejected';

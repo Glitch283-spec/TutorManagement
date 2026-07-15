@@ -11,7 +11,7 @@ export interface Profile {
 }
 
 export type LearningMethod = 'online' | 'offline';
-export type RequestStatus = 'Pending' | 'Processing' | 'Assigned' | 'Completed' | 'Cancelled' | 'Rejected';
+export type RequestStatus = 'Pending' | 'Processing' | 'Assigned' | 'Postponed' | 'Completed' | 'Cancelled' | 'Rejected';
 
 export interface LearningRequest {
   id: number;

@@ -14,6 +14,8 @@ import { RequestDetail } from './features/parent/RequestDetail'
 import { ManagerLayout } from './features/manager/ManagerLayout'
 import { ManagerHome } from './features/manager/ManagerHome'
 import { ReviewRequest } from './features/manager/ReviewRequest'
+import { TeachingScheduleManagement } from './features/manager/TeachingScheduleManagement'
+import { TutorSessions } from './features/tutor/TutorSessions'
 
 import './index.css'
 
@@ -39,12 +41,13 @@ createRoot(document.getElementById('root')!).render(
             <Route element={<ManagerLayout />}>
               <Route path="/manager" element={<ManagerHome />} />
               <Route path="/review-request" element={<ReviewRequest />} />
+              <Route path="/teaching-schedules" element={<TeachingScheduleManagement />} />
             </Route>
           </Route>
           
           {/* Placeholder for Tutor */}
           <Route element={<ProtectedRoute allowedRoles={['tutor']} />}>
-            <Route path="/tutor" element={<div className="p-10 font-bold">Tutor Dashboard (Coming Soon)</div>} />
+            <Route path="/tutor" element={<TutorSessions />} />
           </Route>
         </Routes>
         <Toaster position="top-right" />

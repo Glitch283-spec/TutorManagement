@@ -31,6 +31,7 @@ export const ParentHome = () => {
       case 'Pending': return 'bg-warning/10 text-warning border-warning/20';
       case 'Processing': return 'bg-primary/10 text-primary border-primary/20';
       case 'Assigned': return 'bg-success/10 text-success border-success/20';
+      case 'Postponed': return 'bg-warning/10 text-warning border-warning/20';
       case 'Completed': return 'bg-gray-100 text-gray-600 border-gray-200';
       case 'Rejected':
       case 'Cancelled': return 'bg-danger/10 text-danger border-danger/20';

@@ -71,6 +71,8 @@ export const RequestDetail = () => {
     ? 'bg-danger/10 text-danger border-danger/20'
     : request.status === 'Processing'
       ? 'bg-primary/10 text-primary border-primary/20'
+      : request.status === 'Postponed'
+        ? 'bg-warning/10 text-warning border-warning/20'
       : request.status === 'Assigned' || request.status === 'Completed'
         ? 'bg-success/10 text-success border-success/20'
         : 'bg-warning/10 text-warning border-warning/20';
