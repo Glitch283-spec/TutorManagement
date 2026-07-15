@@ -1,0 +1,25 @@
+{
+  "name": "tutormanagement",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Glitch283-spec/TutorManagement.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Glitch283-spec/TutorManagement/issues"
+  },
+  "homepage": "https://github.com/Glitch283-spec/TutorManagement#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.6",
+    "dotenv": "^17.4.2"
+  }
+}
