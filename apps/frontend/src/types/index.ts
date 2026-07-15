@@ -1,4 +1,4 @@
-export type Role = 'parent' | 'manager' | 'tutor';
+export type Role = "parent" | "manager" | "tutor";
 
 export interface Profile {
   user_id: number;
@@ -10,8 +10,15 @@ export interface Profile {
   tutor_id?: number;
 }
 
-export type LearningMethod = 'online' | 'offline';
-export type RequestStatus = 'Pending' | 'Processing' | 'Assigned' | 'Postponed' | 'Completed' | 'Cancelled' | 'Rejected';
+export type LearningMethod = "online" | "offline";
+export type RequestStatus =
+  | "Pending"
+  | "Processing"
+  | "Assigned"
+  | "Postponed"
+  | "Completed"
+  | "Cancelled"
+  | "Rejected";
 
 export interface LearningRequest {
   id: number;
@@ -30,4 +37,12 @@ export interface LearningRequest {
     full_name: string;
     email: string;
   };
+}
+export interface Tutor {
+  tutor_id: number;
+  user_id: number;
+  full_name: string;
+  email: string;
+  experience: number;
+  status: string;
 }
