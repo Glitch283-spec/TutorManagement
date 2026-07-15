@@ -18,6 +18,7 @@ import { TeachingScheduleManagement } from './features/manager/TeachingScheduleM
 import { TutorSessions } from './features/tutor/TutorSessions'
 
 import './index.css'
+import { RateTutor } from './features/parent/RateTutor'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -32,6 +33,7 @@ createRoot(document.getElementById('root')!).render(
             <Route element={<ParentLayout />}>
               <Route path="/parent" element={<ParentHome />} />
               <Route path="/create-request" element={<CreateRequest />} />
+              <Route path="rate-tutor" element={<RateTutor />} />
               <Route path="/parent/requests/:id" element={<RequestDetail />} />
             </Route>
           </Route>

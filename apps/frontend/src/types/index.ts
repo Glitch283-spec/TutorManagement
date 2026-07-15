@@ -46,3 +46,21 @@ export interface Tutor {
   experience: number;
   status: string;
 }
+
+export interface ClassToRate {
+  class_id: number;
+  tutor_id: number;
+  tutor_name: string;
+  subject: string;
+  is_rated: boolean;
+  completed_sessions: number;
+  request_status: string;
+}
+
+export interface RatingPayload {
+  parent_id: number; // Gọi supabase trực tiếp cần truyền ai là người đánh giá
+  class_id: number;
+  tutor_id: number;
+  score: number;
+  comment?: string;
+}

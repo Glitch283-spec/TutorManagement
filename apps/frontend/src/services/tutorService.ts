@@ -36,22 +36,55 @@ export const tutorService = {
   },
 
   async assignTutor(requestId: number, tutorId: number) {
-    // tạo assignment
-    const { error: assignError } = await supabase.from("assignments").insert({
-      request_id: requestId,
-      tutor_id: tutorId,
-    });
+    // 1. Lấy thông tin subject và grade từ learning_requests
+    const { data: requestInfo, error: fetchError } = await supabase
+      .from("learning_requests")
+      .select("subject, grade")
+      .eq("request_id", requestId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // 2. Tạo assignment
+    const { data: assignmentData, error: assignError } = await supabase
+      .from("assignments")
+      .insert({
+        request_id: requestId,
+        tutor_id: tutorId,
+      })
+      .select()
+      .single();
 
     if (assignError) throw assignError;
+    const startDate = new Date();
 
-    // update request
+    
+    // Tạo đối tượng end_date từ ngày hiện tại
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1); // Tự động cộng 1 tháng và xử lý nhảy năm/tháng
+
+    // Chuyển đổi sang định dạng YYYY-MM-DD để lưu vào DB
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
+
+    const { error: classError } = await supabase
+      .from("classes")
+      .insert({
+        assignment_id: assignmentData.assignment_id,
+        class_name: `${requestInfo.subject} - Lớp ${requestInfo.grade}`,
+        start_date: startStr,
+        end_date: endStr, // Đã cộng thêm 1 tháng
+        status: "active"
+      });
+
+    if (classError) throw classError;
+
+    // 4. Update trạng thái request
     const { error: requestError } = await supabase
       .from("learning_requests")
-      .update({
-        status: "assigned",
-      })
+      .update({ status: "Assigned" })
       .eq("request_id", requestId);
 
     if (requestError) throw requestError;
-  },
+  }
 };
