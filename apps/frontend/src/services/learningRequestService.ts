@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { LearningRequest } from '../types';
+import { notificationService } from './notificationService';
 
 const toUiStatus = (status: string): LearningRequest['status'] => {
   const value = (status || '').toLowerCase();
@@ -68,6 +69,10 @@ export const learningRequestService = {
       .single();
       
     if (error) throw error;
+
+    await notificationService.notifyManagers(
+      `New learning request: ${requestData.subject} for ${requestData.student_name}.`
+    );
     return data;
   },
 
@@ -80,6 +85,43 @@ export const learningRequestService = {
       
     if (error) throw error;
     return (data || []).map((row) => mapRequest(row));
+  },
+
+  async getRequestByParent(id: string, parentId: number) {
+    const { data, error } = await supabase
+      .from('learning_requests')
+      .select('*')
+      .eq('request_id', id)
+      .eq('parent_id', parentId)
+      .single();
+
+    if (error) throw error;
+    return mapRequest(data);
+  },
+
+  async updateRequest(id: string, requestData: Omit<LearningRequest, 'id' | 'created_at' | 'status' | 'profiles'>) {
+    const schedule = [requestData.preferred_date, requestData.preferred_time]
+      .filter(Boolean)
+      .join(' | ');
+
+    const { data, error } = await supabase
+      .from('learning_requests')
+      .update({
+        student_name: requestData.student_name,
+        grade: requestData.grade,
+        subject: requestData.subject,
+        learning_method: requestData.learning_method,
+        schedule,
+        location: requestData.location,
+        note: requestData.special_requirements,
+      })
+      .eq('request_id', id)
+      .eq('parent_id', requestData.parent_id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return mapRequest(data);
   },
 
   async getAllRequests() {

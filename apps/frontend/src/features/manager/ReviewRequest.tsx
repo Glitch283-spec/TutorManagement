@@ -3,6 +3,7 @@ import { learningRequestService } from '../../services/learningRequestService';
 import { toast } from 'react-hot-toast';
 import { Loader2, Search, Filter, Eye, X, Check, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
+import { notificationService } from '../../services/notificationService';
 
 export const ReviewRequest = () => {
   const [requests, setRequests] = useState<any[]>([]);
@@ -13,6 +14,17 @@ export const ReviewRequest = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showMoreInfoModal, setShowMoreInfoModal] = useState(false);
   const [reason, setReason] = useState('');
+
+  const notifyParent = async (parentId: number, message: string) => {
+    try {
+      await notificationService.notifyParent(parentId, message);
+      return true;
+    } catch (error) {
+      console.error('Unable to create parent notification:', error);
+      toast.error('Request was updated, but the parent notification could not be sent.');
+      return false;
+    }
+  };
 
   useEffect(() => {
     loadRequests();
@@ -33,7 +45,12 @@ export const ReviewRequest = () => {
     if (!selectedRequest) return;
     try {
       await learningRequestService.updateRequestStatus(selectedRequest.id, 'Processing');
-      toast.success('Request accepted and moved to Processing');
+      const notificationSent = await notifyParent(
+        selectedRequest.parent_id,
+        `Your learning request for ${selectedRequest.student_name} is now being processed.`
+      );
+      if (notificationSent) toast.success('Request accepted and parent notified');
+      else toast.success('Request accepted and moved to Processing');
       setSelectedRequest(null);
       loadRequests();
     } catch (error: any) {
@@ -47,9 +64,13 @@ export const ReviewRequest = () => {
       return;
     }
     try {
-      // Assuming we had a reject_reason column we would update it here
       await learningRequestService.updateRequestStatus(selectedRequest.id, 'Rejected', reason);
-      toast.success('Request rejected');
+      const notificationSent = await notifyParent(
+        selectedRequest.parent_id,
+        `Your learning request for ${selectedRequest.student_name} was rejected. Reason: ${reason}`
+      );
+      if (notificationSent) toast.success('Request rejected and parent notified');
+      else toast.success('Request rejected');
       setShowRejectModal(false);
       setReason('');
       setSelectedRequest(null);
@@ -65,7 +86,11 @@ export const ReviewRequest = () => {
       return;
     }
     try {
-      // In a real app we'd save this message to a communications table or similar
+      const notificationSent = await notifyParent(
+        selectedRequest.parent_id,
+        `More information is needed for ${selectedRequest.student_name}'s learning request: ${reason}`
+      );
+      if (!notificationSent) return;
       toast.success('Message sent to parent');
       setShowMoreInfoModal(false);
       setReason('');

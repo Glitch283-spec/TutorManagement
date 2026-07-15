@@ -17,6 +17,7 @@ alter table tutors enable row level security;
 alter table assignments enable row level security;
 alter table classes enable row level security;
 alter table sessions enable row level security;
+alter table notifications enable row level security;
 
 drop policy if exists anon_all_learning_requests on learning_requests;
 create policy anon_all_learning_requests on learning_requests
@@ -45,5 +46,8 @@ create policy anon_all_classes on classes
 drop policy if exists anon_all_sessions on sessions;
 create policy anon_all_sessions on sessions
   for all to anon using (true) with check (true);
+
+-- Notifications are accessed through the authenticated backend API only.
+drop policy if exists anon_all_notifications on notifications;
 
 -- Do NOT expose `users.password` to anon. Login goes through the backend API.

@@ -108,6 +108,7 @@ export const ParentHome = () => {
                   <th className="px-6 py-4 font-medium">Grade</th>
                   <th className="px-6 py-4 font-medium">Date Created</th>
                   <th className="px-6 py-4 font-medium">Status</th>
+                  <th className="px-6 py-4 font-medium text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -123,6 +124,9 @@ export const ParentHome = () => {
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(request.status)}`}>
                         {request.status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Link to={`/parent/requests/${request.id}`} className="text-sm font-medium text-primary hover:text-primary-hover">View details</Link>
                     </td>
                   </tr>
                 ))}

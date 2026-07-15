@@ -10,6 +10,7 @@ import { Login } from './features/auth/Login'
 import { ParentLayout } from './features/parent/ParentLayout'
 import { ParentHome } from './features/parent/ParentHome'
 import { CreateRequest } from './features/parent/CreateRequest'
+import { RequestDetail } from './features/parent/RequestDetail'
 import { ManagerLayout } from './features/manager/ManagerLayout'
 import { ManagerHome } from './features/manager/ManagerHome'
 import { ReviewRequest } from './features/manager/ReviewRequest'
@@ -29,6 +30,7 @@ createRoot(document.getElementById('root')!).render(
             <Route element={<ParentLayout />}>
               <Route path="/parent" element={<ParentHome />} />
               <Route path="/create-request" element={<CreateRequest />} />
+              <Route path="/parent/requests/:id" element={<RequestDetail />} />
             </Route>
           </Route>
 

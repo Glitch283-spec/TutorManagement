@@ -1,7 +1,8 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { authService } from '../services/authService';
+import { AppNotification, notificationService } from '../services/notificationService';
 import { LogOut, LayoutDashboard, FileText, Calendar, User as UserIcon, GraduationCap } from 'lucide-react';
 
 interface LayoutProps {
@@ -12,6 +13,56 @@ interface LayoutProps {
 export const Layout = ({ children, menuItems }: LayoutProps) => {
   const { profile, clearSession } = useAuth();
   const navigate = useNavigate();
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notificationError, setNotificationError] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!profile?.user_id) return;
+
+    const loadNotifications = () => {
+      notificationService.getMine()
+        .then((items) => {
+          setNotifications(items);
+          setNotificationError(false);
+        })
+        .catch(() => setNotificationError(true));
+    };
+
+    loadNotifications();
+    const interval = window.setInterval(loadNotifications, 30000);
+    return () => window.clearInterval(interval);
+  }, [profile?.user_id]);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!notificationRef.current?.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, []);
+
+  const toggleNotifications = async () => {
+    const nextOpen = !isNotificationOpen;
+    setIsNotificationOpen(nextOpen);
+
+    if (nextOpen && profile?.user_id) {
+      try {
+        const latestNotifications = await notificationService.getMine();
+        setNotifications(latestNotifications);
+        await notificationService.markAllAsRead();
+        setNotifications((items) => items.map((item) => ({ ...item, is_read: true })));
+        setNotificationError(false);
+      } catch {
+        setNotificationError(true);
+      }
+    }
+  };
+
+  const unreadCount = notifications.filter((item) => !item.is_read).length;
 
   const handleLogout = async () => {
     await authService.signOut();
@@ -89,15 +140,44 @@ export const Layout = ({ children, menuItems }: LayoutProps) => {
         <header className="h-16 bg-card border-b border-border hidden md:flex items-center justify-between px-8">
           <h2 className="text-xl font-semibold text-text">Welcome back, {profile?.full_name?.split(' ')[0]}</h2>
           <div className="flex items-center space-x-4">
-            <button className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-secondary-text hover:bg-gray-50">
-              <span className="relative flex h-3 w-3 absolute top-0 right-0 -mt-1 -mr-1">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-              </span>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
+            <div className="relative" ref={notificationRef}>
+              <button
+                type="button"
+                onClick={toggleNotifications}
+                aria-label="Notifications"
+                aria-expanded={isNotificationOpen}
+                className="relative w-10 h-10 rounded-full border border-border flex items-center justify-center text-secondary-text hover:bg-gray-50"
+              >
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+              </button>
+
+              {isNotificationOpen && (
+                <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+                  <div className="border-b border-border px-4 py-3 font-semibold text-text">Notifications</div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notificationError ? (
+                      <p className="px-4 py-5 text-sm text-danger">Unable to load notifications.</p>
+                    ) : notifications.length === 0 ? (
+                      <p className="px-4 py-5 text-sm text-secondary-text">You have no notifications.</p>
+                    ) : notifications.map((item) => (
+                      <div key={item.notification_id} className="border-b border-border px-4 py-3 last:border-0">
+                        <p className="text-sm text-text">{item.message}</p>
+                        <p className="mt-1 text-xs text-secondary-text">
+                          {new Date(item.created_date).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
