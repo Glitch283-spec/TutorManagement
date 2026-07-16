@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import { learningRequestService } from '../../services/learningRequestService';
 import { toast } from 'react-hot-toast';
-import { Loader2, Search, Filter, Eye, X, Check, MessageSquare } from 'lucide-react';
+import { Loader2, Search, Eye, X, Check, MessageSquare, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { notificationService } from '../../services/notificationService';
+import AssignTutorModal from '../../components/AssignTutorModal';
+import { LearningRequest, RequestStatus } from '../../types';
 
 export const ReviewRequest = () => {
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<LearningRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<LearningRequest | null>(null);
+  const [assigningRequest, setAssigningRequest] = useState<LearningRequest | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'All' | RequestStatus>('All');
   
   // Modals state
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -33,13 +38,42 @@ export const ReviewRequest = () => {
   const loadRequests = async () => {
     try {
       const data = await learningRequestService.getAllRequests();
-      setRequests(data?.filter(r => r.status === 'Pending') || []); // Screen A: Pending Request List
+      setRequests(data || []);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+  const getStatusColor = (status: RequestStatus) => {
+    switch (status) {
+      case 'Pending':
+        return 'bg-warning/10 text-warning border-warning/20';
+      case 'Processing':
+        return 'bg-primary/10 text-primary border-primary/20';
+      case 'Assigned':
+        return 'bg-success/10 text-success border-success/20';
+      case 'Rejected':
+      case 'Cancelled':
+        return 'bg-danger/10 text-danger border-danger/20';
+      default:
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
+  };
+
+  const filteredRequests = requests.filter((request) => {
+    const keyword = searchTerm.trim().toLowerCase();
+    const matchesSearch = !keyword || [
+      request.student_name,
+      request.subject,
+      request.grade,
+      request.profiles?.full_name,
+      request.profiles?.email,
+    ].some((value) => value?.toLowerCase().includes(keyword));
+    const matchesStatus = statusFilter === 'All' || request.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const handleAccept = async () => {
     if (!selectedRequest) return;
@@ -53,7 +87,7 @@ export const ReviewRequest = () => {
       else toast.success('Request accepted and moved to Processing');
       setSelectedRequest(null);
       loadRequests();
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to accept request');
     }
   };
@@ -75,7 +109,7 @@ export const ReviewRequest = () => {
       setReason('');
       setSelectedRequest(null);
       loadRequests();
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to reject request');
     }
   };
@@ -96,7 +130,7 @@ export const ReviewRequest = () => {
       setReason('');
       setSelectedRequest(null);
       // Status remains Pending
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to send message');
     }
   };
@@ -172,19 +206,40 @@ export const ReviewRequest = () => {
         </div>
 
         <div className="flex flex-wrap gap-4 items-center">
-          <button onClick={handleAccept} className="btn-primary flex items-center bg-success hover:bg-green-600">
-            <Check className="w-5 h-5 mr-2" />
-            Accept
-          </button>
-          <button onClick={() => setShowRejectModal(true)} className="btn-danger flex items-center">
-            <X className="w-5 h-5 mr-2" />
-            Reject
-          </button>
-          <button onClick={() => setShowMoreInfoModal(true)} className="btn-secondary flex items-center">
-            <MessageSquare className="w-5 h-5 mr-2" />
-            Request More Info
-          </button>
+          {selectedRequest.status === 'Pending' && (
+            <>
+              <button onClick={handleAccept} className="btn-primary flex items-center bg-success hover:bg-green-600">
+                <Check className="w-5 h-5 mr-2" />
+                Accept
+              </button>
+              <button onClick={() => setShowRejectModal(true)} className="btn-danger flex items-center">
+                <X className="w-5 h-5 mr-2" />
+                Reject
+              </button>
+              <button onClick={() => setShowMoreInfoModal(true)} className="btn-secondary flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2" />
+                Request More Info
+              </button>
+            </>
+          )}
+          {selectedRequest.status === 'Processing' && (
+            <button onClick={() => setAssigningRequest(selectedRequest)} className="btn-primary flex items-center">
+              <UserPlus className="w-5 h-5 mr-2" />
+              Assign Tutor
+            </button>
+          )}
         </div>
+
+        <AssignTutorModal
+          open={Boolean(assigningRequest)}
+          requestId={assigningRequest?.id || 0}
+          onClose={() => setAssigningRequest(null)}
+          onAssigned={() => {
+            setAssigningRequest(null);
+            setSelectedRequest(null);
+            loadRequests();
+          }}
+        />
 
         {/* Reject Modal */}
         {showRejectModal && (
@@ -233,8 +288,8 @@ export const ReviewRequest = () => {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-text">Pending Requests</h1>
-        <p className="text-secondary-text">Review and manage new tutor requests.</p>
+        <h1 className="text-2xl font-bold text-text">Learning Requests</h1>
+        <p className="text-secondary-text">Review all requests and assign tutors to processing requests.</p>
       </div>
 
       <div className="card-container overflow-hidden p-0">
@@ -244,18 +299,31 @@ export const ReviewRequest = () => {
             <input 
               type="text" 
               placeholder="Search requests..." 
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
-          <button className="flex items-center text-sm font-medium text-secondary-text hover:text-text px-3 py-2 border border-border rounded-lg bg-white">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </button>
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as 'All' | RequestStatus)}
+            className="text-sm font-medium text-secondary-text px-3 py-2 border border-border rounded-lg bg-white focus:outline-none focus:border-primary"
+            aria-label="Filter requests by status"
+          >
+            <option value="All">All statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Processing">Processing</option>
+            <option value="Assigned">Assigned</option>
+            <option value="Postponed">Postponed</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="Rejected">Rejected</option>
+          </select>
         </div>
         
-        {requests.length === 0 ? (
+        {filteredRequests.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-secondary-text">No pending requests at the moment.</p>
+            <p className="text-secondary-text">No requests match the current filters.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -271,7 +339,7 @@ export const ReviewRequest = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {requests.map((request) => (
+                {filteredRequests.map((request) => (
                   <tr key={request.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 font-medium text-text">{request.student_name}</td>
                     <td className="px-6 py-4 text-secondary-text">{request.subject}</td>
@@ -280,18 +348,29 @@ export const ReviewRequest = () => {
                       {format(new Date(request.created_at), 'MMM dd, yyyy')}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border bg-warning/10 text-warning border-warning/20`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(request.status)}`}>
                         {request.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => setSelectedRequest(request)}
-                        className="btn-secondary px-4 py-2 text-sm flex items-center justify-center ml-auto"
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Detail
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {request.status === 'Processing' && (
+                          <button
+                            onClick={() => setAssigningRequest(request)}
+                            className="btn-primary px-4 py-2 text-sm flex items-center justify-center"
+                          >
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Assign Tutor
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setSelectedRequest(request)}
+                          className="btn-secondary px-4 py-2 text-sm flex items-center justify-center"
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Detail
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -300,6 +379,15 @@ export const ReviewRequest = () => {
           </div>
         )}
       </div>
+      <AssignTutorModal
+        open={Boolean(assigningRequest)}
+        requestId={assigningRequest?.id || 0}
+        onClose={() => setAssigningRequest(null)}
+        onAssigned={() => {
+          setAssigningRequest(null);
+          loadRequests();
+        }}
+      />
     </div>
   );
 };

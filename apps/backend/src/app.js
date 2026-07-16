@@ -3,6 +3,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth");
 const notificationRoutes = require("./routes/notifications");
 const scheduleRoutes = require("./routes/schedules");
+const requestRoutes = require("./routes/requests");
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.get("/", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/schedules", scheduleRoutes);
+app.use("/api/requests", requestRoutes);
 
 module.exports = app;

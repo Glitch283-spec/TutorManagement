@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { LearningRequest } from '../types';
 import { notificationService } from './notificationService';
 
@@ -126,43 +127,8 @@ export const learningRequestService = {
   },
 
   async getAllRequests() {
-    const { data: requestRows, error } = await supabase
-      .from('learning_requests')
-      .select('*')
-      .order('created_date', { ascending: false });
-      
-    if (error) throw error;
-
-    const requests = requestRows || [];
-    if (requests.length === 0) return [];
-
-    const parentIds = [...new Set(requests.map((r) => r.parent_id))];
-    const { data: parentRows } = await supabase
-      .from('parents')
-      .select('parent_id, user_id')
-      .in('parent_id', parentIds);
-
-    const parentToUser = new Map<number, number>();
-    for (const row of parentRows || []) {
-      parentToUser.set(row.parent_id, row.user_id);
-    }
-
-    const userIds = [...new Set((parentRows || []).map((p) => p.user_id))];
-    const { data: userRows } = await supabase
-      .from('user_profiles')
-      .select('user_id, full_name, email')
-      .in('user_id', userIds);
-
-    const usersById = new Map<number, { full_name: string; email: string }>();
-    for (const user of userRows || []) {
-      usersById.set(user.user_id, { full_name: user.full_name, email: user.email });
-    }
-
-    return requests.map((row) => {
-      const userId = parentToUser.get(row.parent_id);
-      const parentInfo = userId ? usersById.get(userId) : undefined;
-      return mapRequest(row, parentInfo?.full_name, parentInfo?.email);
-    });
+    const { data } = await api.get<{ requests: any[] }>('/requests');
+    return (data.requests || []).map((row) => mapRequest(row, row.parent_name, row.parent_email));
   },
 
   async getRequestById(id: string) {
